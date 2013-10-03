@@ -44,7 +44,10 @@
 (defn- install-dependencies [request]
   (->
    request
-   (java/java :openjdk)
+   (java/java-settings {:vendor :oracle
+                        :version "7"
+                        :components #{:jdk}})
+   (java/install-java)
    (git/git)
    (leiningen/install)
    (zeromq/install :version "2.1.4")
@@ -54,8 +57,19 @@
    (package/package "zip")
    ))
 
-(defn get-release [request release]
-  (let [url "git://github.com/lorcan/storm.git"
+(defn storm-release-url [release]
+  (format "https://dl.dropboxusercontent.com/s/p5wf0hsdab5n9kn/storm-%s.zip" release))
+
+(defn download-release [request release]
+  (-> request
+    (remote-file/remote-file
+       (format "$HOME/storm-%s.zip" release)
+       :url (storm-release-url release)
+       :no-versioning true)
+    ))
+
+(defn build-release-from-head [request release]
+  (let [url "git://github.com/nathanmarz/storm.git"
        rl (if (empty? release) "" release)] ; empty string for pallet
 
     (-> request
@@ -74,6 +88,12 @@
         (git pull)
         (bash "bin/build_release.sh")
         (cp "*.zip $HOME/")))))
+
+(defn get-release [request release]
+  (if release
+    (download-release request release)
+    (build-release-from-head request release)
+    ))
 
 (defn make [request release]
   (->
