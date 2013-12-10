@@ -1,1 +1,3 @@
 storm.local.dir: "/mnt/storm"
+supervisor.childopts: "-Djdk.xml.entityExpansionLimit=0"
+worker.childopts: "-Djdk.xml.entityExpansionLimit=0"
